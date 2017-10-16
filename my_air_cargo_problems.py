@@ -60,19 +60,18 @@ class AirCargoProblem(Problem):
             :return: list of Action objects
             """
             loads = []
-            # Iterate over all possible combinations and create the respective load action
-            for p in self.planes:
-                for c in self.cargos:
-                    for a in self.airports:
-                        precond_pos = [expr("At({}, {})".format(c, a)),
-                                    expr("At({}, {})".format(p, a))]
+            for a in self.airports:
+                for p in self.planes:
+                    for c in self.cargos:
+                        precond_pos = [expr("At({}, {})".format(p, a)),
+                                       expr("At({}, {})".format(c, a)),
+                                       ]
                         precond_neg = []
-                        precond = [precond_pos, precond_neg]
                         effect_add = [expr("In({}, {})".format(c, p))]
                         effect_rem = [expr("At({}, {})".format(c, a))]
-                        effect = [effect_add, effect_rem]
-                        # Create action and add to list
-                        load = Action(expr("Load({}, {}, {})".format(c, p, a)), precond, effect)
+                        load = Action(expr("Load({}, {}, {})".format(c, p, a)),
+                                     [precond_pos, precond_neg],
+                                     [effect_add, effect_rem])
                         loads.append(load)
             return loads
 
@@ -82,19 +81,18 @@ class AirCargoProblem(Problem):
             :return: list of Action objects
             """
             unloads = []
-             # Iterate over all possible combinations and create the respective unload action
-            for p in self.planes:
-                for c in self.cargos:
-                    for a in self.airports:
-                        precond_pos = [expr("In({}, {})".format(c, p)),
-                                    expr("At({}, {})".format(p, a))]
+            for a in self.airports:
+                for p in self.planes:
+                    for c in self.cargos:
+                        precond_pos = [expr("At({}, {})".format(p, a)),
+                                       expr("In({}, {})".format(c, p)),
+                                       ]
                         precond_neg = []
-                        precond = [precond_pos, precond_neg]
                         effect_add = [expr("At({}, {})".format(c, a))]
                         effect_rem = [expr("In({}, {})".format(c, p))]
-                        effect = [effect_add, effect_rem]
-                        # Create action and add to list
-                        unload = Action(expr("Unload({}, {}, {})".format(c, p, a)), precond, effect)
+                        unload = Action(expr("Unload({}, {}, {})".format(c, p, a)),
+                                     [precond_pos, precond_neg],
+                                     [effect_add, effect_rem])
                         unloads.append(unload)
             return unloads
 
@@ -137,7 +135,7 @@ class AirCargoProblem(Problem):
             if (all(precond_pos in kb.clauses for precond_pos in action.precond_pos) and
                     all(precond_neg not in kb.clauses for precond_neg in action.precond_neg)):
                 possible_actions.append(action)
-                
+ 
         return possible_actions
 
     def result(self, state: str, action: Action):
@@ -196,8 +194,7 @@ class AirCargoProblem(Problem):
         """
         # requires implemented PlanningGraph class
         pg = PlanningGraph(self, node.state)
-        pg_levelsum = pg.h_levelsum()
-        return pg_levelsum
+        return pg.h_levelsum()
 
     @lru_cache(maxsize=8192)
     def h_ignore_preconditions(self, node: Node):
